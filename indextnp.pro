@@ -55,8 +55,6 @@ PRO indexTNPMC,lines,fname,numstart,numend,core,TIME=time
   
   i=0ULL
 
-  str={i:0ULL,mo:0B,dy:0B,yr:0S}
-
   pos=numstart
   
   POINT_LUN,lun,numstart
@@ -66,18 +64,13 @@ PRO indexTNPMC,lines,fname,numstart,numend,core,TIME=time
     POINT_LUN,lun,pos+41ull
     READF,lun,mo,dy,yr,FORMAT='(I2,X,I2,X,I4)'
     
-    str.i=i
-    str.mo=mo
-    str.dy=dy
-    str.yr=yr
-    
     POINT_LUN,nlun,pos
     pos=long64(pos)
     
     WRITEU,wlun,i,pos,yr,mo,dy
     
     i++
-    
+
   ENDWHILE
   
   lines=i-1ull
@@ -118,7 +111,7 @@ END
 
 PRO indexTNPWrap,ncores,fname,PATH=PATH,TIME=time,WAITAT=waitat
 
-str={i:0ULL,mo:0B,dy:0B,yr:0S}
+str={i:0ULL,pos:0LL,yr:0S,mo:0B,dy:0B}
 
 IF NOT KEYWORD_SET(waitat) THEN waitat=-1
 
@@ -201,8 +194,8 @@ FOR j=0,ncores-1 DO BEGIN
   cmd0='lines'+strnum+'=t'+strnum+'.getvar("lines")'
   cmd1='OBJ_DESTROY,t'+strnum
   cmd2='lines=lines+lines'+strnum
-  cmd3='PRINT,lines,lines'+strnum
-  res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3)
+  ;cmd3='PRINT,lines,lines'+strnum
+  res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2);+' & '+cmd3)
   
   IF j NE 0 THEN BEGIN
     fname='"TNPIndex.dat.'+strnum+'.part"'
@@ -213,9 +206,9 @@ FOR j=0,ncores-1 DO BEGIN
     cmd4='WRITEU,lun,dat'
     cmd5='FREE_LUN,rlun'
     cmd6='FILE_DELETE,'+fname
-    
+  
     res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3+' & '+cmd4+' & '+cmd5+' & '+cmd6)
-    
+
   ENDIF
 ENDFOR
 
