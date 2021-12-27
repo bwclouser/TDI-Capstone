@@ -1,4 +1,4 @@
-PRO indexTNP,fname,num
+PRO indexTNP,fname,numstart,numend
 
 t0=systime(1)
 
@@ -17,19 +17,15 @@ yr=0
 
 pos=0LL
 
-FOR i=0ull,num-1ull DO BEGIN
+FOR i=numstart,numend-1ull DO BEGIN
   
   POINT_LUN,nlun,pos
   pos=long64(pos)
   POINT_LUN,lun,pos+41ull
   READF,lun,mo,dy,yr,FORMAT='(I2,X,I2,X,I4)'
-  
-  ;stop
-  
+
   WRITEU,wlun,i,pos,yr,mo,dy
-;  POINT_LUN,lun,pos
-;  READF,lun,s
-  
+
 ENDFOR
 
 FREE_LUN,lun
@@ -38,6 +34,61 @@ FREE_LUN,wlun
 PRINT,SYSTIME(1)-t0
 
 END
+
+PRO indexTNPMC,lines,fname,numstart,numend,core,TIME=time
+
+  t0=SYSTIME(1)
+  
+  outname='TNPIndex.dat.'+STRING(core,FORMAT='(I02)')+'.part'
+
+  s=''
+
+  OPENR,lun,fname,/GET_LUN
+  
+  OPENW,wlun,outname,/GET_LUN
+
+  nlun=-1*lun
+
+  mo=0B
+  dy=0B
+  yr=0S
+  
+  i=0ULL
+
+  str={i:0ULL,mo:0B,dy:0B,yr:0S}
+
+  pos=numstart
+  
+  POINT_LUN,lun,numstart
+  ;stop
+  WHILE pos LT numend DO BEGIN
+
+    POINT_LUN,lun,pos+41ull
+    READF,lun,mo,dy,yr,FORMAT='(I2,X,I2,X,I4)'
+    
+    str.i=i
+    str.mo=mo
+    str.dy=dy
+    str.yr=yr
+    
+    POINT_LUN,nlun,pos
+    pos=long64(pos)
+    
+    WRITEU,wlun,i,pos,yr,mo,dy
+    
+    i++
+    
+  ENDWHILE
+  
+  lines=i-1ull
+    
+  FREE_LUN,lun
+  FREE_LUN,wlun
+  
+  time=SYSTIME(1)-t0
+
+END
+
 
 PRO writeTripID,fname,num
 
@@ -64,4 +115,116 @@ FREE_LUN,rlun
 FREE_LUN,wlun
 
 END
+
+PRO indexTNPWrap,ncores,fname,PATH=PATH,TIME=time,WAITAT=waitat
+
+str={i:0ULL,mo:0B,dy:0B,yr:0S}
+
+IF NOT KEYWORD_SET(waitat) THEN waitat=-1
+
+t0=SYSTIME(1)
+
+s=''
+
+IF NOT KEYWORD_SET(PATH) THEN PATH=':/home/benjamin/Documents/GitHub/TDI-Capstone'
+outname="'TNPIndex.dat'"
+
+IF ncores GT !CPU.HW_NCPU THEN BEGIN
+  PRINT,'You want to use more threads than are available!'
+ENDIF ELSE BEGIN
+  OPENR,lun,fname,/GET_LUN
+  nlun=-1*lun
+  fs=FSTAT(lun)
+  blockSize=ULONG64(fs.size/ncores)
+  byteGuesses=(UL64INDGEN(ncores)+1ull)*blocksize
+  byteVals=ULON64ARR(2,ncores)
+  byteVals[1,ncores-1]=fs.size
+  
+  FOR i=0,ncores-2 DO BEGIN
+    POINT_LUN,lun,byteGuesses[i]
+    READF,lun,s
+    POINT_LUN,nlun,pos
+    byteVals[1,i]=pos
+    byteVals[0,i+1]=pos    
+  ENDFOR
+  
+  POINT_LUN,lun,0
+  READF,lun,s
+  POINT_LUN,nlun,pos
+  byteVals[0,0]=pos
+  FREE_LUN,lun
+  
+  scmd=LIST()
+  
+  FOR i=0,ncores-1 DO BEGIN
+    
+    tname='t'+STRING(i,FORMAT='(I02)')
+    cmd0=tname+'=OBJ_NEW("IDL_IDLBridge",output="t"+STRING(i,FORMAT="(I02)")+".txt")'
+    cmd1=tname+'.setvar,"PATH",PATH'
+    cmd2=tname+'.setvar,"byteVals",byteVals'
+    cmd3=tname+'.setvar,"i",i'
+    cmd4=tname+'.setvar,"fname",fname
+    cmd5=tname+'.execute,"!PATH+=PATH"'
+    cmd6=tname+'.execute,".compile indextnp"'
+    cmd7=tname+'.execute,"indexTNPMC,lines,fname,byteVals[0,i],byteVals[1,i],i,TIME=time",/NOWAIT'
+    scmd.add,tname+'.status()'
+    res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3+' & '+cmd4+' & '+cmd5+' & '+cmd6+' & '+cmd7)
+
+  ENDFOR
+ENDELSE
+
+i=0ull
+
+scmd=scmd.toarray()
+cmd='ssum=TOTAL('
+FOR j=0,ncores-2 DO BEGIN
+  cmd+=scmd[j]
+  cmd+='+'
+ENDFOR
+cmd+=scmd[ncores-1]
+cmd+=')'
+res=EXECUTE(cmd)
+
+WHILE ssum NE 0 DO BEGIN
+  WAIT,1
+  ;print,t00.status(),t01.status(),t02.status(),t03.status(),t04.status(),t05.status(),t06.status(),t07.status(),t08.status(),t09.status(),t10.status(),t11.status()
+  res=EXECUTE(cmd)
+  PRINT,ssum
+ENDWHILE
+
+OPENW,lun,'TNPIndex.dat.00.part',/GET_LUN,/APPEND
+
+lines=1ull
+
+FOR j=0,ncores-1 DO BEGIN
+  strnum=STRING(j,FORMAT='(I02)')
+  cmd0='lines'+strnum+'=t'+strnum+'.getvar("lines")'
+  cmd1='OBJ_DESTROY,t'+strnum
+  cmd2='lines=lines+lines'+strnum
+  cmd3='PRINT,lines,lines'+strnum
+  res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3)
+  
+  IF j NE 0 THEN BEGIN
+    fname='"TNPIndex.dat.'+strnum+'.part"'
+    cmd0='dat=REPLICATE(str,lines'+strnum+')'
+    cmd1='OPENR,rlun,'+fname+',/GET_LUN'
+    cmd2='READU,rlun,dat'
+    cmd3='dat.i=dat.i+lines'
+    cmd4='WRITEU,lun,dat'
+    cmd5='FREE_LUN,rlun'
+    cmd6='FILE_DELETE,'+fname
+    
+    res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3+' & '+cmd4+' & '+cmd5+' & '+cmd6)
+    
+  ENDIF
+ENDFOR
+
+FREE_LUN,lun
+
+FILE_MOVE,'TNPIndex.dat.00.part','TNPIndex.dat',/OVERWRITE
+
+PRINT,SYSTIME(1)-t0
+
+END
+
 
