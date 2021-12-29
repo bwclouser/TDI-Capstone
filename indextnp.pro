@@ -73,7 +73,7 @@ PRO indexTNPMC,lines,fname,numstart,numend,core,TIME=time
 
   ENDWHILE
   
-  lines=i-1ull
+  lines=i
     
   FREE_LUN,lun
   FREE_LUN,wlun
@@ -110,6 +110,8 @@ FREE_LUN,wlun
 END
 
 PRO indexTNPWrap,ncores,fname,PATH=PATH,TIME=time,WAITAT=waitat
+
+;this program takes about 2 minutes to run with ~12 cores. Maybe further gains is speed could be attained by writing to a shared file?
 
 str={i:0ULL,pos:0LL,yr:0S,mo:0B,dy:0B}
 
@@ -164,40 +166,44 @@ ENDIF ELSE BEGIN
     res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3+' & '+cmd4+' & '+cmd5+' & '+cmd6+' & '+cmd7)
 
   ENDFOR
-ENDELSE
-
-i=0ull
-
-scmd=scmd.toarray()
-cmd='ssum=TOTAL('
-FOR j=0,ncores-2 DO BEGIN
-  cmd+=scmd[j]
-  cmd+='+'
-ENDFOR
-cmd+=scmd[ncores-1]
-cmd+=')'
-res=EXECUTE(cmd)
-
-WHILE ssum NE 0 DO BEGIN
-  WAIT,1
-  ;print,t00.status(),t01.status(),t02.status(),t03.status(),t04.status(),t05.status(),t06.status(),t07.status(),t08.status(),t09.status(),t10.status(),t11.status()
-  res=EXECUTE(cmd)
-  PRINT,ssum
-ENDWHILE
-
-OPENW,lun,'TNPIndex.dat.00.part',/GET_LUN,/APPEND
-
-lines=1ull
-
-FOR j=0,ncores-1 DO BEGIN
-  strnum=STRING(j,FORMAT='(I02)')
-  cmd0='lines'+strnum+'=t'+strnum+'.getvar("lines")'
-  cmd1='OBJ_DESTROY,t'+strnum
-  cmd2='lines=lines+lines'+strnum
-  ;cmd3='PRINT,lines,lines'+strnum
-  res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2);+' & '+cmd3)
   
-  IF j NE 0 THEN BEGIN
+  i=0ull
+  
+  scmd=scmd.toarray()
+  cmd='ssum=TOTAL('
+  FOR j=0,ncores-2 DO BEGIN
+    cmd+=scmd[j]
+    cmd+='+'
+  ENDFOR
+  cmd+=scmd[ncores-1]
+  cmd+=')'
+  res=EXECUTE(cmd)
+  
+  WHILE ssum NE 0 DO BEGIN
+    WAIT,1
+    res=EXECUTE(cmd)
+    PRINT,ssum
+  ENDWHILE
+  
+  OPENW,lun,'TNPIndex.dat',/GET_LUN
+  
+  tlines=0ULL
+  
+  FOR j=0,ncores-1 DO BEGIN
+    strnum=STRING(j,FORMAT='(I02)')
+    cmd0='lines'+strnum+'=t'+strnum+'.getvar("lines")'
+    cmd1='OBJ_DESTROY,t'+strnum
+    cmd2='tlines=tlines+lines'+strnum
+    res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2)
+  ENDFOR
+  
+  FOR j=0,ncores-1 DO BEGIN    
+    IF j EQ 0 THEN BEGIN
+      WRITEU,lun,ULONG64(tlines)
+      lines=0ULL
+    ENDIF
+      
+    strnum=STRING(j,FORMAT='(I02)')
     fname='"TNPIndex.dat.'+strnum+'.part"'
     cmd0='dat=REPLICATE(str,lines'+strnum+')'
     cmd1='OPENR,rlun,'+fname+',/GET_LUN'
@@ -206,15 +212,17 @@ FOR j=0,ncores-1 DO BEGIN
     cmd4='WRITEU,lun,dat'
     cmd5='FREE_LUN,rlun'
     cmd6='FILE_DELETE,'+fname
+    cmd7='lines+=lines'+strnum
   
-    res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3+' & '+cmd4+' & '+cmd5+' & '+cmd6)
+    res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3+' & '+cmd4+' & '+cmd5+' & '+cmd6+' & '+cmd7)
 
-  ENDIF
-ENDFOR
-
-FREE_LUN,lun
-
-FILE_MOVE,'TNPIndex.dat.00.part','TNPIndex.dat',/OVERWRITE
+  ENDFOR
+  
+  FREE_LUN,lun
+  
+  ;FILE_MOVE,'TNPIndex.dat.00.part','TNPIndex.dat',/OVERWRITE
+  
+ENDELSE
 
 PRINT,SYSTIME(1)-t0
 
