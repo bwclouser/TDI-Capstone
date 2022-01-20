@@ -57,19 +57,16 @@ PRO indexTNPMC,lines,fname,numstart,numend,core,TIME=time
 
   pos=numstart
   
-  POINT_LUN,lun,numstart
-  ;stop
   WHILE pos LT numend DO BEGIN
 
     POINT_LUN,lun,pos+41ull
     READF,lun,mo,dy,yr,FORMAT='(I2,X,I2,X,I4)'
     
-    POINT_LUN,nlun,pos
-    pos=long64(pos)
-    
     WRITEU,wlun,i,pos,yr,mo,dy
     
     i++
+    POINT_LUN,nlun,pos
+    pos=LONG64(pos)
 
   ENDWHILE
   
@@ -142,7 +139,7 @@ ENDIF ELSE BEGIN
     byteVals[1,i]=pos
     byteVals[0,i+1]=pos    
   ENDFOR
-  
+
   POINT_LUN,lun,0
   READF,lun,s
   POINT_LUN,nlun,pos
