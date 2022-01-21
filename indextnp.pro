@@ -66,7 +66,7 @@ PRO indexTNPMC,lines,fname,numstart,numend,core,TIME=time
     
     i++
     POINT_LUN,nlun,pos
-    pos=LONG64(pos)
+    pos=ULONG64(pos)
 
   ENDWHILE
   
@@ -110,7 +110,7 @@ PRO indexTNPWrap,ncores,fname,PATH=PATH,TIME=time,WAITAT=waitat
 
 ;this program takes about 2 minutes to run with ~12 cores. Maybe further gains is speed could be attained by writing to a shared file?
 
-str={i:0ULL,pos:0LL,yr:0S,mo:0B,dy:0B}
+str={i:0ULL,pos:0ULL,yr:0S,mo:0B,dy:0B}
 
 IF NOT KEYWORD_SET(waitat) THEN waitat=-1
 
