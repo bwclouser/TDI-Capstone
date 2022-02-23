@@ -226,3 +226,48 @@ PRO indexTaxiWrap,ncores,fname,PATH=PATH,TIME=time
   PRINT,SYSTIME(1)-t0
 
 END
+
+PRO hashTaxis,fname,outname
+
+  t0=systime(1)
+
+  s=''
+
+  OPENR,lun,fname,/GET_LUN
+  READF,lun,s
+
+  nlun=-1*lun
+
+  oneline=''
+  remainder=''
+  id=''
+  tid=''
+
+  taxiID=0S
+  
+  taxis=HASH()
+
+  WHILE ~EOF(lun) DO BEGIN
+
+
+    READF,lun,oneline
+    READS,oneline,id,remainder,FORMAT='(A41,A)'
+    IF remainder.substring(0,1) NE 'NA' THEN BEGIN
+      READS,remainder,tid,mo,dy,yr,FORMAT='(A128,X,I2,X,I2,X,I4)'
+      IF NOT taxiss.haskey(tid) THEN BEGIN
+        taxis[tid]=taxiID
+        taxidID++
+        ;IF taxiID MOD 1000 EQ 0 THEN PRINT,driverID
+      ENDIF
+    ENDIF
+    
+    
+  ENDWHILE
+  
+  FREE_LUN,lun
+  
+  SAVE,taxis,filename='taxiHash.sav'
+  
+  PRINT,SYSTIME(1)-t0
+
+END
