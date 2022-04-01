@@ -373,12 +373,14 @@ FOR j=0l,nTimes-1 DO BEGIN
     ;
     stro.id=index[thisTime[j]].num
     stro.sdy=sdy
-    IF sampm EQ 'PM' THEN stro.shr=shr+12s ELSE stro.shr=shr
+    ;IF sampm EQ 'PM' THEN stro.shr=shr+12s ELSE stro.shr=shr
+    IF sampm EQ 'PM' THEN stro.shr=(shr MOD 12S)+12S ELSE stro.shr=(shr MOD 12S)
     stro.smn=smn
     stro.eyr=eyr
     stro.emo=emo
     stro.edy=edy
-    IF eampm EQ 'PM' THEN stro.ehr=ehr+12s ELSE stro.ehr=ehr
+    ;IF eampm EQ 'PM' THEN stro.ehr=ehr+12s ELSE stro.ehr=ehr
+    IF eampm EQ 'PM' THEN stro.ehr=(ehr MOD 12S)+12S ELSE stro.ehr=(ehr MOD 12S)
     stro.emn=emn
     stro.trips=trips
     stro.tripmi=tripmi

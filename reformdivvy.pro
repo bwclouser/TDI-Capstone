@@ -1,4 +1,4 @@
-PRO reformDivvy,fname
+PRO reformDivvy,fname,data=data
 COMPILE_OPT strictarrsubs
 ON_ERROR,0
 str={id:0ULL,sdy:0B,shr:0B,smn:0B,ssc:0B,emo:0B,edy:0B,eyr:0S,ehr:0B,emn:0B,esc:0B,trips:0UL,bid:0UL,fid:0S,fname:'',tid:0S,tname:'',utype:'',gender:'',byr:0S,flat:0.,flon:0.,floc:'',tlat:0.,tlon:0.,tloc:''}
