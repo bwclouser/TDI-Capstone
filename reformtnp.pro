@@ -6,7 +6,7 @@ t0=SYSTIME(1)
 ;dat=REPLICATE(str,num)
 ;bad=[18724701ULL,25919077ULL,28577856ULL,28970783ULL]
 bad=[0ull]
-stro={id:0ull,sdy:0b,shr:0b,smn:0b,eyr:fix(0),emo:0b,edy:0b,ehr:0b,emn:0b,trips:0ul,tripmi:0.,ctpickup:0ull,ctdropoff:0ull,capickup:0b,cadropoff:0b,fare:0.,tip:0.,addcharge:0.,ttotal:0.,stauth:0b,tppool:0b,clatpickup:0d0,clonpickup:0d0,clatdropoff:0d0,clondropoff:0d0}
+stro={id:0ull,syr:fix(0),smo:0b,sdy:0b,shr:0b,smn:0b,eyr:fix(0),emo:0b,edy:0b,ehr:0b,emn:0b,trips:0ul,tripmi:0.,ctpickup:0ull,ctdropoff:0ull,capickup:0b,cadropoff:0b,fare:0.,tip:0.,addcharge:0.,ttotal:0.,stauth:0b,tppool:0b,clatpickup:0d0,clonpickup:0d0,clatdropoff:0d0,clondropoff:0d0}
 str={num:0ULL,pos:0LL,yr:0S,mo:0B,dy:0B}
 
 ;plist=['id','smo','sdy','syr','smn','ssc','sampm','emo','edy','eyr','ehr','emn','esc','eampm','trips','tripmi','ctpickup','ctdropoff','capickup','cadropoff','fare','tip','addcharge','ttotal','tppool','clatpickup','clonpickup','clocpickup','clatdropoff','clondropoff','clocdropoff']
@@ -68,7 +68,7 @@ clocdropoff=''
 ;ENDFOR
 ;FREE_LUN,ilun
 
-yrtime=index.yr+index.mo/30.5+index.dy/365.
+yrtime=index.yr+(index.mo-1)/30.5+(index.dy-1)/365.
 
 tmin=MIN(yrtime,jmin)
 tmax=MAX(yrtime,jmax)
@@ -99,7 +99,7 @@ IF ncores EQ -1 THEN BEGIN
     thisTime=WHERE(index.yr EQ yr AND index.mo EQ mo)
     nTimes=N_ELEMENTS(thisTime)
 
-    WRITEU,wlun,yr,mo,nTimes
+    ;WRITEU,wlun,yr,mo,nTimes
     
     FOR j=0l,nTimes-1 DO BEGIN
       isBad=WHERE(index[thisTime[j]].num eq bad)
@@ -159,13 +159,17 @@ IF ncores EQ -1 THEN BEGIN
         ENDELSE  
         ;  
         stro.id=index[thisTime[j]].num
+        stro.syr=syr
+        stro.smo=smo
         stro.sdy=sdy
-        IF sampm EQ 'PM' THEN stro.shr=shr+12s ELSE stro.shr=shr
+        ;IF sampm EQ 'PM' THEN stro.shr=shr+12s ELSE stro.shr=shr
+        IF sampm EQ 'PM' THEN stro.shr=(shr MOD 12S)+12S ELSE stro.shr=(shr MOD 12S)
         stro.smn=smn
         stro.eyr=eyr
         stro.emo=emo
         stro.edy=edy
-        IF eampm EQ 'PM' THEN stro.ehr=ehr+12s ELSE stro.ehr=ehr
+        ;IF eampm EQ 'PM' THEN stro.ehr=ehr+12s ELSE stro.ehr=ehr
+        IF eampm EQ 'PM' THEN stro.ehr=(ehr MOD 12S)+12S ELSE stro.ehr=(ehr MOD 12S)
         stro.emn=emn
         stro.trips=trips
         stro.tripmi=tripmi
@@ -264,7 +268,7 @@ PRO reformCoreMC,fname,index,yr,mo
 bad=[0ULL]
 oneline=''
 
-stro={id:0ull,sdy:0b,shr:0b,smn:0b,eyr:fix(0),emo:0b,edy:0b,ehr:0b,emn:0b,trips:0ul,tripmi:0.,ctpickup:0ull,ctdropoff:0ull,capickup:0b,cadropoff:0b,fare:0.,tip:0.,addcharge:0.,ttotal:0.,stauth:0b,tppool:0b,clatpickup:0d0,clonpickup:0d0,clatdropoff:0d0,clondropoff:0d0}
+stro={id:0ull,syr:fix(0),smo:0b,sdy:0b,shr:0b,smn:0b,eyr:fix(0),emo:0b,edy:0b,ehr:0b,emn:0b,trips:0ul,tripmi:0.,ctpickup:0ull,ctdropoff:0ull,capickup:0b,cadropoff:0b,fare:0.,tip:0.,addcharge:0.,ttotal:0.,stauth:0b,tppool:0b,clatpickup:0d0,clonpickup:0d0,clatdropoff:0d0,clondropoff:0d0}
 
 cmdarr=['id=STRING(-1,FORMAT="(I02)")','smo=-1b & sdy=-1b & syr=-1s & shr=-1b & smn=-1b & ssc=-1b & sampm=STRING(-1,FORMAT="(I02)")','emo=-1b & edy=-1b & eyr=-1s & ehr=-1b & emn=-1b & esc=-1b & eampm=STRING(-1,FORMAT="(I02)")','trips=-1.','tripmi=-1.','ctpickup=0ull','ctdropoff=0ull','capickup=-1b','cadropoff=-1b','fare=-1.','tip=-1.','addcharge=-1.','ttotal=-1.','tppool=-1b','clatpickup=-1d0','clonpickup=-1d0','clocpickup=STRING(-1,FORMAT="(I02)")','clatdropoff=-1d0','clondropoff=-1d0','clocdropoff=STRING(-1,FORMAT="(I02)")']
 vararr=['id,','smo,sdy,syr,shr,smn,ssc,sampm,','emo,edy,eyr,ehr,emn,esc,eampm,','trips,','tripmi,','ctpickup,','ctdropoff,','capickup,','cadropoff,','fare,','tip,','addcharge,','ttotal,','tppool,','clatpickup,','clonpickup,','clocpickup,','clatdropoff,','clondropoff,','clocdropoff,']
@@ -312,7 +316,7 @@ OPENW,wlun,wfname,/GET_LUN
 thisTime=WHERE(index.yr EQ yr AND index.mo EQ mo)
 nTimes=N_ELEMENTS(thisTime)
 
-WRITEU,wlun,yr,mo,nTimes
+;WRITEU,wlun,yr,mo,nTimes
 
 FOR j=0l,nTimes-1 DO BEGIN
   isBad=WHERE(index[thisTime[j]].num eq bad)
@@ -372,6 +376,8 @@ FOR j=0l,nTimes-1 DO BEGIN
     ENDELSE
     ;
     stro.id=index[thisTime[j]].num
+    stro.syr=syr
+    stro.smo=smo
     stro.sdy=sdy
     ;IF sampm EQ 'PM' THEN stro.shr=shr+12s ELSE stro.shr=shr
     IF sampm EQ 'PM' THEN stro.shr=(shr MOD 12S)+12S ELSE stro.shr=(shr MOD 12S)

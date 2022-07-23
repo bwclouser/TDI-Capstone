@@ -55,8 +55,10 @@ PRO indexTNPMC,lines,fname,numstart,numend,core,TIME=time
   
   i=0ULL
 
-  pos=numstart
-  
+  POINT_LUN,lun,numstart
+  POINT_LUN,nlun,pos
+  pos=ULONG64(pos)
+
   WHILE pos LT numend DO BEGIN
 
     POINT_LUN,lun,pos+41ull
@@ -64,13 +66,15 @@ PRO indexTNPMC,lines,fname,numstart,numend,core,TIME=time
     
     WRITEU,wlun,i,pos,yr,mo,dy
     
-    i++
     POINT_LUN,nlun,pos
     pos=ULONG64(pos)
+    
+    i++
 
   ENDWHILE
   
   lines=i
+  print,lines
     
   FREE_LUN,lun
   FREE_LUN,wlun
@@ -130,13 +134,13 @@ ENDIF ELSE BEGIN
   blockSize=ULONG64(fs.size/ncores)
   byteGuesses=(UL64INDGEN(ncores)+1ull)*blocksize
   byteVals=ULON64ARR(2,ncores)
-  byteVals[1,ncores-1]=fs.size
+  byteVals[1,ncores-1]=fs.size-1
   
   FOR i=0,ncores-2 DO BEGIN
     POINT_LUN,lun,byteGuesses[i]
     READF,lun,s
     POINT_LUN,nlun,pos
-    byteVals[1,i]=pos
+    byteVals[1,i]=pos-1
     byteVals[0,i+1]=pos    
   ENDFOR
 
@@ -147,20 +151,22 @@ ENDIF ELSE BEGIN
   FREE_LUN,lun
   
   scmd=LIST()
-  
+  cdpath='/media/benjamin/Data/Chicago_Transit/TNP'
   FOR i=0,ncores-1 DO BEGIN
     
     tname='t'+STRING(i,FORMAT='(I02)')
     cmd0=tname+'=OBJ_NEW("IDL_IDLBridge",output="t"+STRING(i,FORMAT="(I02)")+".txt")'
-    cmd1=tname+'.setvar,"PATH",PATH'
-    cmd2=tname+'.setvar,"byteVals",byteVals'
-    cmd3=tname+'.setvar,"i",i'
-    cmd4=tname+'.setvar,"fname",fname
-    cmd5=tname+'.execute,"!PATH+=PATH"'
-    cmd6=tname+'.execute,".compile indextnp"'
-    cmd7=tname+'.execute,"indexTNPMC,lines,fname,byteVals[0,i],byteVals[1,i],i,TIME=time",/NOWAIT'
+    cmd1=tname+'.setvar,"cdpath",cdpath'
+    cmd2=tname+'.setvar,"PATH",PATH'
+    cmd3=tname+'.setvar,"byteVals",byteVals'
+    cmd4=tname+'.setvar,"i",i'
+    cmd5=tname+'.setvar,"fname",fname
+    cmd6=tname+'.execute,"CD,cdpath"
+    cmd7=tname+'.execute,"!PATH+=PATH"'
+    cmd8=tname+'.execute,".compile indextnp"'
+    cmd9=tname+'.execute,"indexTNPMC,lines,fname,byteVals[0,i],byteVals[1,i],i,TIME=time",/NOWAIT'
     scmd.add,tname+'.status()'
-    res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3+' & '+cmd4+' & '+cmd5+' & '+cmd6+' & '+cmd7)
+    res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3+' & '+cmd4+' & '+cmd5+' & '+cmd6+' & '+cmd7+' & '+cmd8+' & '+cmd9)
 
   ENDFOR
   
@@ -199,7 +205,6 @@ ENDIF ELSE BEGIN
       WRITEU,lun,ULONG64(tlines)
       lines=0ULL
     ENDIF
-      
     strnum=STRING(j,FORMAT='(I02)')
     fname='"TNPIndex.dat.'+strnum+'.part"'
     cmd0='dat=REPLICATE(str,lines'+strnum+')'
@@ -210,9 +215,10 @@ ENDIF ELSE BEGIN
     cmd5='FREE_LUN,rlun'
     cmd6='FILE_DELETE,'+fname
     cmd7='lines+=lines'+strnum
+    ;stop
   
     res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3+' & '+cmd4+' & '+cmd5+' & '+cmd6+' & '+cmd7)
-
+    ;stop
   ENDFOR
   
   FREE_LUN,lun
