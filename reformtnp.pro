@@ -220,7 +220,6 @@ ENDIF ELSE BEGIN
     cmd7='t'+strnum+'.execute,"SHMMAP,shmname,SIZE=iSize,TEMPLATE=str"'
     cmd8='t'+strnum+'.execute,"dex=SHMVAR(shmname)"'
     cmd9='names.add,t'+strnum
-    print,cmd1
     res=EXECUTE(cmd0+' & '+cmd1+' & '+cmd2+' & '+cmd3+' & '+cmd4+' & '+cmd5+' & '+cmd6+' & '+cmd7+' & '+cmd8+' & '+cmd9)
     
     
