@@ -6,7 +6,7 @@ t0=SYSTIME(1)
 ;dat=REPLICATE(str,num)
 ;bad=[18724701ULL,25919077ULL,28577856ULL,28970783ULL]
 bad=[0ull]
-stro={id:0ull,syr:fix(0),smo:0b,sdy:0b,shr:0b,smn:0b,eyr:fix(0),emo:0b,edy:0b,ehr:0b,emn:0b,trips:0ul,tripmi:0.,ctpickup:0ull,ctdropoff:0ull,capickup:0b,cadropoff:0b,fare:0.,tip:0.,addcharge:0.,ttotal:0.,stauth:0b,tppool:0b,clatpickup:0d0,clonpickup:0d0,clatdropoff:0d0,clondropoff:0d0}
+stro={id:0ull,syr:fix(0),smo:0b,sdy:0b,shr:0b,smn:0b,sjday:0d0,eyr:fix(0),emo:0b,edy:0b,ehr:0b,emn:0b,trips:0ul,tripmi:0.,ctpickup:0ull,ctdropoff:0ull,capickup:0b,cadropoff:0b,fare:0.,tip:0.,addcharge:0.,ttotal:0.,stauth:0b,tppool:0b,clatpickup:0d0,clonpickup:0d0,clatdropoff:0d0,clondropoff:0d0}
 str={num:0ULL,pos:0LL,yr:0S,mo:0B,dy:0B}
 
 ;plist=['id','smo','sdy','syr','smn','ssc','sampm','emo','edy','eyr','ehr','emn','esc','eampm','trips','tripmi','ctpickup','ctdropoff','capickup','cadropoff','fare','tip','addcharge','ttotal','tppool','clatpickup','clonpickup','clocpickup','clatdropoff','clondropoff','clocdropoff']
@@ -34,6 +34,7 @@ syr=0
 shr=0
 smn=0
 ssc=0
+sjday=0d0
 sampm=''
 emo=0
 edy=0
@@ -165,6 +166,7 @@ IF ncores EQ -1 THEN BEGIN
         ;IF sampm EQ 'PM' THEN stro.shr=shr+12s ELSE stro.shr=shr
         IF sampm EQ 'PM' THEN stro.shr=(shr MOD 12S)+12S ELSE stro.shr=(shr MOD 12S)
         stro.smn=smn
+        stro.sjday=julday(smo,sdy,syr,stro.shr,0,0)
         stro.eyr=eyr
         stro.emo=emo
         stro.edy=edy
@@ -267,7 +269,7 @@ PRO reformCoreMC,fname,index,yr,mo
 bad=[0ULL]
 oneline=''
 
-stro={id:0ull,syr:fix(0),smo:0b,sdy:0b,shr:0b,smn:0b,eyr:fix(0),emo:0b,edy:0b,ehr:0b,emn:0b,trips:0ul,tripmi:0.,ctpickup:0ull,ctdropoff:0ull,capickup:0b,cadropoff:0b,fare:0.,tip:0.,addcharge:0.,ttotal:0.,stauth:0b,tppool:0b,clatpickup:0d0,clonpickup:0d0,clatdropoff:0d0,clondropoff:0d0}
+stro={id:0ull,syr:fix(0),smo:0b,sdy:0b,shr:0b,smn:0b,sjday:0d0,eyr:fix(0),emo:0b,edy:0b,ehr:0b,emn:0b,trips:0ul,tripmi:0.,ctpickup:0ull,ctdropoff:0ull,capickup:0b,cadropoff:0b,fare:0.,tip:0.,addcharge:0.,ttotal:0.,stauth:0b,tppool:0b,clatpickup:0d0,clonpickup:0d0,clatdropoff:0d0,clondropoff:0d0}
 
 cmdarr=['id=STRING(-1,FORMAT="(I02)")','smo=-1b & sdy=-1b & syr=-1s & shr=-1b & smn=-1b & ssc=-1b & sampm=STRING(-1,FORMAT="(I02)")','emo=-1b & edy=-1b & eyr=-1s & ehr=-1b & emn=-1b & esc=-1b & eampm=STRING(-1,FORMAT="(I02)")','trips=-1.','tripmi=-1.','ctpickup=0ull','ctdropoff=0ull','capickup=-1b','cadropoff=-1b','fare=-1.','tip=-1.','addcharge=-1.','ttotal=-1.','tppool=-1b','clatpickup=-1d0','clonpickup=-1d0','clocpickup=STRING(-1,FORMAT="(I02)")','clatdropoff=-1d0','clondropoff=-1d0','clocdropoff=STRING(-1,FORMAT="(I02)")']
 vararr=['id,','smo,sdy,syr,shr,smn,ssc,sampm,','emo,edy,eyr,ehr,emn,esc,eampm,','trips,','tripmi,','ctpickup,','ctdropoff,','capickup,','cadropoff,','fare,','tip,','addcharge,','ttotal,','tppool,','clatpickup,','clonpickup,','clocpickup,','clatdropoff,','clondropoff,','clocdropoff,']
@@ -279,6 +281,7 @@ sdy=0
 syr=0
 shr=0
 smn=0
+sjday=0d0
 ssc=0
 sampm=''
 emo=0
@@ -381,6 +384,7 @@ FOR j=0l,nTimes-1 DO BEGIN
     ;IF sampm EQ 'PM' THEN stro.shr=shr+12s ELSE stro.shr=shr
     IF sampm EQ 'PM' THEN stro.shr=(shr MOD 12S)+12S ELSE stro.shr=(shr MOD 12S)
     stro.smn=smn
+    stro.sjday=julday(smo,sdy,syr,stro.shr,0,0)
     stro.eyr=eyr
     stro.emo=emo
     stro.edy=edy
